@@ -94,7 +94,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     res_json = response.json()
                     
                     if "error" not in res_json and "choices" in res_json:
-                        raw_content = res_json['choices'][0]['message']['content'].strip()
+                        raw_content = res_json['choices']['message']['content'].strip()
                         if raw_content.startswith("```json"): raw_content = raw_content[7:-3].strip()
                         elif raw_content.startswith("```"): raw_content = raw_content[3:-3].strip()
                         
@@ -187,7 +187,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     with open(broll_f, "wb") as f:
                         f.write(video_data)
                 else:
-                    st.error("❌ Pexels कडून कोणताही व्हिडिओ डाउनलोड करता आला नाही.")
+                    st.error("❌ Pexels कडून कोणताही व्हिडिओ下載 करता आला नाही.")
                     st.stop()
 
                 # --- STEP ५: FFmpeg मिक्सिंग आणि रेंडर ---
