@@ -8,12 +8,11 @@ import json
 import subprocess
 
 # --- १. मुख्य कॉन्फिगरेशन आणि सुरक्षा ---
-# Render सर्व्हरसाठी एनव्हायर्नमेंट व्हेरियबल्समधून की मिळवणे
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
 
-if not OPENAI_API_KEY or not PEXELS_API_KEY:
-    st.error("🚨 त्रुटी: सर्व्हरवर API Keys सापडल्या नाहीत! कृपया Render Environment Variables तपासा.")
+if not PEXELS_API_KEY:
+    st.error("🚨 त्रुटी: सर्व्हरवर PEXELS_API_KEY सापडली नाही! कृपया Render Environment Variables तपासा.")
     st.stop()
 
 st.title("🎬 DesiCut AI - नंबर १ हाय-प्रॉफिट टूल")
@@ -71,45 +70,66 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
         final_out = f"final_{user_id}_{timestamp}.mp4"
 
         with st.spinner("⏳ सिस्टीम बॅकएंडला काम करत आहे... कृपया १ मिनिट थांबा..."):
+            script_text = ""
+            keyword = "nature"
+            
+            # --- स्टेप १: स्क्रिप्ट मिळवणे (OpenAI सह, अयशस्वी झाल्यास फ्री बॅकअप एआय) ---
             try:
-                # --- स्टेप १: OpenAI कडून स्क्रिप्ट मिळवणे ---
+                if not OPENAI_API_KEY:
+                    raise ValueError("OpenAI Key missing, switching to backup AI.")
+                
                 url = "https://openai.com"
-                headers = {
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
-                    "Content-Type": "application/json"
-                }
-                
+                headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
                 prompt = (
-                    f"You are a short video script writer. Output a single JSON object. "
                     f"Write a short video script about '{topic}' in language code '{lang}'. "
-                    f"Keep it under {duration} seconds. "
-                    f"IMPORTANT: Provide a matching short search 'keyword' in strict ENGLISH language for Pexels video search. "
-                    f"Output MUST be a JSON object with exactly two keys: 'script' and 'keyword'."
+                    f"Keep it under {duration} seconds. Provide a single matching search 'keyword' in strict ENGLISH for video search. "
+                    f"Output MUST be a valid JSON with exactly two keys: 'script' and 'keyword'."
                 )
-                
                 payload = {
                     "model": "gpt-4o-mini",
                     "messages": [{"role": "user", "content": prompt}],
                     "response_format": { "type": "json_object" }
                 }
                 
-                response = requests.post(url, headers=headers, json=payload)
+                response = requests.post(url, headers=headers, json=payload, timeout=15)
                 res_json = response.json()
                 
-                raw_content = res_json['choices'][0]['message']['content']
-                
-                if raw_content.startswith("```json"):
-                    raw_content = raw_content[7:-3].strip()
-                elif raw_content.startswith("```"):
-                    raw_content = raw_content[3:-3].strip()
+                if "error" in res_json or "choices" not in res_json:
+                    raise ValueError("OpenAI Quota Exceeded or Error, switching to backup AI.")
                     
+                raw_content = res_json['choices']['message']['content'].strip()
+                if raw_content.startswith("```json"): raw_content = raw_content[7:-3].strip()
+                elif raw_content.startswith("```"): raw_content = raw_content[3:-3].strip()
+                
                 data = json.loads(raw_content)
                 script_text = data.get("script", "")
                 keyword = data.get("keyword", "nature")
                 
-                st.info(f"**मजकूर तयार झाला आहे:** {script_text}")
-                st.info(f"**शोधलेला कीवर्ड (Pexels साठी):** {keyword}")
+            except Exception as openai_err:
+                # जर OpenAI चे क्रेडिट्स संपले असतील तर हा फ्री बॅकअप एआय सुरू होईल
+                st.warning("⚠️ OpenAI लायसन्स/क्रेडिट मर्यादा आली आहे. फ्री बॅकअप AI वापरून स्क्रिप्ट बनवत आहे...")
+                try:
+                    hf_url = "https://huggingface.co"
+                    hf_prompt = f"<|im_start|>user\nWrite a short video script about '{topic}' in language code '{lang}'. Keep it simple. Then provide a matching English search keyword for video. Format your answer as a JSON object with keys 'script' and 'keyword'. Do not write anything else.<|im_end|>\n<|im_start|>assistant\n"
+                    
+                    hf_res = requests.post(hf_url, json={"inputs": hf_prompt, "parameters": {"max_new_tokens": 300}}, timeout=20)
+                    hf_json = hf_res.json()
+                    
+                    generated_text = hf_json[0]['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
+                    if generated_text.startswith("```json"): generated_text = generated_text[7:-3].strip()
+                    elif generated_text.startswith("```"): generated_text = generated_text[3:-3].strip()
+                    
+                    data = json.loads(generated_text)
+                    script_text = data.get("script", f"व्हिडिओ विषय: {topic}")
+                    keyword = data.get("keyword", "nature")
+                except Exception as hf_err:
+                    st.error("❌ सर्व AI सर्व्हर व्यस्त आहेत. कृपया थोड्या वेळाने प्रयत्न करा.")
+                    st.stop()
 
+            st.info(f"**मजकूर तयार झाला आहे:** {script_text}")
+            st.info(f"**शोधलेला कीवर्ड (Pexels साठी):** {keyword}")
+
+            try:
                 # --- STEP २: ऑडिओ तयार करणे ---
                 try:
                     asyncio.run(generate_edge_voice(script_text, voice_f, lang))
@@ -177,24 +197,3 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
 
                 subprocess.run(cmd, check=True)
 
-                st.session_state["user_credits"] -= 1
-                st.success("🎉  तुमचा हाय-प्रॉफिट व्हिडिओ यशस्वीरीत्या तयार झाला आहे!")
-
-                with open(final_out, "rb") as file:
-                    st.video(file)
-                    st.download_button(label="📥  व्हिडिओ डाउनलोड करा", data=file.read(), file_name="desicut_video.mp4", mime="video/mp4")
-
-            except Exception as e:
-                st.error(f"❌ व्हिडिओ मिक्सिंगमध्ये एरर आला: {str(e)}")
-
-            finally:
-                for f in [voice_f, srt_f, broll_f, final_out]:
-                    if os.path.exists(f):
-                        try:
-                            os.remove(f)
-                        except Exception:
-                            pass
-
-# --- ६. फुटर ---
-st.markdown("---")
-st.caption("**AI Disclaimer:** This video, voice, and script are generated using artificial intelligence automated systems via Edge-TTS and OpenAI. DesiCut AI holds no liability for user-generated media.")
