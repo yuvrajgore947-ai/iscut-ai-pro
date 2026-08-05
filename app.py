@@ -41,7 +41,7 @@ st.sidebar.write("💬 [WhatsApp करा](https://wa.me) आणि अमर�
 # --- ३. इनपुट फॉर्म आणि सेफ्टी गार्ड ---
 topic = st.text_input("तुम्हाच्या व्हिडिओचा विषय लिहा (उदा. भारतातील ३ रहस्यमयी किल्ले):")
 lang = st.selectbox("व्हिडिओची भाषा निवडा:", ["mr", "hi", "en"], format_func=lambda x: {"mr": "मराठी", "hi": "हिंदी", "en": "English"}[x])
-duration = st.slider("व्हिडिओची लांबी (सेकंद):", 15, 30, 60, value=30)
+duration = st.slider("व्हिडिओची लांबी (सेकंद):", min_value=15, max_value=60, value=30)
 
 def legal_safety_guard(text):
     bad_words = ["scam", "hack", "riot", "adult", "दंगल", "अश्लील", "घोटाळा", "हॅक", "मर्डर", "क्रॅश"]
