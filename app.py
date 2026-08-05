@@ -74,7 +74,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
             keyword = "nature"
             ai_success = False
             
-            # --- स्टेप १: स्क्रिप्ट मिळवणे (OpenAI सह प्रयत्न) ---
+            # --- स्टेप १: स्क्रिप्ट मिळवणे (OpenAI) ---
             if OPENAI_API_KEY:
                 try:
                     url = "https://openai.com"
@@ -94,7 +94,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     res_json = response.json()
                     
                     if "error" not in res_json and "choices" in res_json:
-                        raw_content = res_json['choices']['message']['content'].strip()
+                        raw_content = res_json['choices'][0]['message']['content'].strip()
                         if raw_content.startswith("```json"): raw_content = raw_content[7:-3].strip()
                         elif raw_content.startswith("```"): raw_content = raw_content[3:-3].strip()
                         
@@ -104,9 +104,9 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                         if script_text:
                             ai_success = True
                 except Exception:
-                    pass
+                    ai_success = False
 
-            # --- स्टेप १.५: फ्री बॅकअप एआय सिस्टीम (OpenAI अपयशी ठरल्यास) ---
+            # --- स्टेप १.५: फ्री बॅकअप एआय सिस्टीम (HuggingFace) ---
             if not ai_success:
                 st.warning("⚠️ OpenAI मर्यादा आली आहे. मोफत बॅकअप AI द्वारे स्क्रिप्ट जनरेट करत आहे...")
                 try:
@@ -116,13 +116,12 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     hf_res = requests.post(hf_url, json={"inputs": hf_prompt, "parameters": {"max_new_tokens": 300}}, timeout=20)
                     hf_json = hf_res.json()
                     
+                    generated_text = ""
                     if isinstance(hf_json, list) and len(hf_json) > 0:
                         generated_text = hf_json[0].get('generated_text', '').split("<|im_start|>assistant\n")[-1].strip()
                     elif isinstance(hf_json, dict) and 'generated_text' in hf_json:
                         generated_text = hf_json['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
-                    else:
-                        generated_text = str(hf_json)
-
+                    
                     if generated_text.startswith("```json"): generated_text = generated_text[7:-3].strip()
                     elif generated_text.startswith("```"): generated_text = generated_text[3:-3].strip()
                     
@@ -131,14 +130,13 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     keyword = data.get("keyword", "nature")
                     ai_success = True
                 except Exception:
-                    # जर दोन्ही AI बंद असतील तर सुरक्षित डिफॉल्ट मजकूर वापरणे
                     script_text = f"नमस्कार मित्रांनो, आज आपण पाहणार आहोत {topic} या विषयाबद्दल माहिती."
                     keyword = "nature"
 
             st.info(f"**मजकूर तयार झाला आहे:** {script_text}")
             st.info(f"**शोधलेला कीवर्ड (Pexels साठी):** {keyword}")
 
-            # --- मुख्य व्हिडिओ निर्मिती आणि रेंडर इंजिन (try-except-finally सुरक्षित रचना) ---
+            # --- मुख्य व्हिडिओ निर्मिती आणि रेंडर इंजिन ---
             try:
                 # --- STEP २: ऑडिओ तयार करणे ---
                 try:
@@ -193,3 +191,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     st.stop()
 
                 # --- STEP ५: FFmpeg मिक्सिंग आणि रेंडर ---
+                safe_srt_f = srt_f.replace("\\", "/")
+                
+                cmd = [
+                    "ffmpeg", "-y",
