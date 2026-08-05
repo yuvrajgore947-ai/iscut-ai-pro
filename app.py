@@ -7,64 +7,64 @@ import edge_tts
 import json
 import subprocess
 
-# --- à¥§. à¤®à¥à¤–à¥à¤¯ à¤•à¥‰à¤¨à¥à¤«à¤¿à¤—à¤°à¥‡à¤¶à¤¨ à¤†à¤£à¤¿ à¤¸à¥à¤°à¤•à¥à¤·à¤¾ ---
-st.set_page_config(page_title="DesiCut AI Pro", page_icon="ðŸŽ¬", layout="centered")
+# --- १. मुख्य कॉन्फिगरेशन आणि सुरक्षा ---
+st.set_page_config(page_title="DesiCut AI Pro", page_icon="🎬", layout="centered")
 
-# API à¤•à¥€ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤à¤ªà¤£à¥‡ à¤®à¤¿à¤³à¤µà¤£à¥‡
-try:
-    OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-    PEXELS_API_KEY = st.secrets["PEXELS_API_KEY"]
-except Exception:
-    st.error("ðŸš¨ à¤¤à¥à¤°à¥à¤Ÿà¥€: à¤•à¥ƒà¤ªà¤¯à¤¾ Hugging Face Settings à¤®à¤§à¥à¤¯à¥‡ à¤¤à¥à¤®à¤šà¥à¤¯à¤¾ API Keys à¤¸à¥‡à¤Ÿ à¤•à¤°à¤¾!")
+# Render सर्व्हरसाठी सुरक्षितपणे API की वाचणे (FIXED FOR RENDER SERVER)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
+
+if not OPENAI_API_KEY or not PEXELS_API_KEY:
+    st.error("🚨 त्रुटी: सर्व्हरवर API Keys सापडल्या नाहीत! कृपया Render Environment चेक करा.")
     st.stop()
 
-st.title("ðŸŽ¬ DesiCut AI - à¤¨à¤‚à¤¬à¤° à¥§ à¤¹à¤¾à¤¯-à¤ªà¥à¤°à¥‰à¤«à¤¿à¤Ÿ à¤Ÿà¥‚à¤²")
-st.write("à¤«à¤•à¥à¤¤ à¥§ à¤•à¥à¤²à¤¿à¤•à¤®à¤§à¥à¤¯à¥‡ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤¤à¤¯à¤¾à¤° à¤•à¤°à¤¾ à¤†à¤£à¤¿ à¤¸à¥‹à¤¶à¤² à¤®à¥€à¤¡à¤¿à¤¯à¤¾à¤µà¤°à¥‚à¤¨ à¤ªà¥ˆà¤¸à¥‡ à¤•à¤®à¤µà¤¾!")
+st.title("🎬 DesiCut AI - नंबर १ हाय-प्रॉफिट टूल")
+st.write("फक्त १ क्लिकमध्ये व्हिडिओ तयार करा आणि सोशल मीडियावरून पैसे कमवा!")
 
-# --- à¥¨. à¤¯à¥à¤à¤° à¤¡à¥…à¤¶à¤¬à¥‹à¤°à¥à¤¡ (Sidebar) ---
+# --- २. युझर डॅशबोर्ड (Sidebar) ---
 if "user_credits" not in st.session_state:
     st.session_state["user_credits"] = 5
 
-st.sidebar.header("ðŸ‘¤  à¤¤à¥à¤®à¤šà¥‡ à¤–à¤¾à¤¤à¥‡ (à¤®à¥‹à¤¬à¤¾à¤ˆà¤²)")
-user_id = st.sidebar.text_input("à¤¯à¥à¤à¤° à¤†à¤¯à¤¡à¥€:", value="pro_user_india")
-st.sidebar.write(f"ðŸª™ à¤¶à¤¿à¤²à¥à¤²à¤• à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤•à¥à¤°à¥‡à¤¡à¤¿à¤Ÿà¥à¤¸: **{st.session_state['user_credits']}**")
+st.sidebar.header("👤  तुमचे खाते (मोबाईल)")
+user_id = st.sidebar.text_input("युझर आयडी:", value="pro_user_india")
+st.sidebar.write(f"🪙 शिल्लक व्हिडिओ क्रेडिट्स: **{st.session_state['user_credits']}**")
 
-if st.sidebar.button("ðŸŽ à¤«à¥à¤°à¥€ à¤•à¥à¤°à¥‡à¤¡à¤¿à¤Ÿà¥à¤¸ à¤œà¥‹à¤¡à¤¾ (+à¥«)"):
+if st.sidebar.button("🎁 फ्री क्रेडिट्स जोडा (+५)"):
     st.session_state["user_credits"] += 5
-    st.sidebar.success("à¥« à¤•à¥à¤°à¥‡à¤¡à¤¿à¤Ÿà¥à¤¸ à¤¯à¤¶à¤¸à¥à¤µà¥€à¤°à¤¿à¤¤à¥à¤¯à¤¾ à¤œà¥‹à¤¡à¤²à¥‡ à¤—à¥‡à¤²à¥‡!")
+    st.sidebar.success("५ क्रेडिट्स यशस्वीरित्या जोडले गेले!")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("ðŸ’Ž à¤ªà¥à¤°à¥€à¤®à¤¿à¤¯à¤® à¤ªà¥à¤²à¥…à¤¨ à¤°à¤¿à¤šà¤¾à¤°à¥à¤œ")
-st.sidebar.write("ðŸ’³ UPI ID: `yourupi@okaxis`")
-st.sidebar.write("ðŸ’¬ [WhatsApp à¤•à¤°à¤¾](https://wa.me) à¤†à¤£à¤¿ à¤…à¤®à¤°à¥à¤¯à¤¾à¤¦ à¤•à¥à¤°à¥‡à¤¡à¤¿à¤Ÿà¥à¤¸ à¤®à¤¿à¤³à¤µà¤¾.")
+st.sidebar.subheader("💎 प्रीमियम प्लॅन रिचार्ज")
+st.sidebar.write("💳 UPI ID: `yourupi@okaxis`")
+st.sidebar.write("💬 [WhatsApp करा](https://wa.me) आणि अमर्याद क्रेडिट्स मिळवा.")
 
-# --- à¥©. à¤‡à¤¨à¤ªà¥à¤Ÿ à¤«à¥‰à¤°à¥à¤® à¤†à¤£à¤¿ à¤¸à¥‡à¤«à¥à¤Ÿà¥€ à¤—à¤¾à¤°à¥à¤¡ ---
-topic = st.text_input("à¤¤à¥à¤®à¥à¤¹à¤¾à¤šà¥à¤¯à¤¾ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“à¤šà¤¾ à¤µà¤¿à¤·à¤¯ à¤²à¤¿à¤¹à¤¾ (à¤‰à¤¦à¤¾. à¤­à¤¾à¤°à¤¤à¤¾à¤¤à¥€à¤² à¥© à¤°à¤¹à¤¸à¥à¤¯à¤®à¤¯à¥€ à¤•à¤¿à¤²à¥à¤²à¥‡):")
-lang = st.selectbox("à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“à¤šà¥€ à¤­à¤¾à¤·à¤¾ à¤¨à¤¿à¤µà¤¡à¤¾:", ["mr", "hi", "en"], format_func=lambda x: {"mr": "à¤®à¤°à¤¾à¤ à¥€", "hi": "à¤¹à¤¿à¤‚à¤¦à¥€", "en": "English"}[x])
-duration = st.slider("à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“à¤šà¥€ à¤²à¤¾à¤‚à¤¬à¥€ (à¤¸à¥‡à¤•à¤‚à¤¦):", 15, 30, 60, value=30)
+# --- ३. इनपुट फॉर्म आणि सेफ्टी गार्ड ---
+topic = st.text_input("तुम्हाच्या व्हिडिओचा विषय लिहा (उदा. भारतातील ३ रहस्यमयी किल्ले):")
+lang = st.selectbox("व्हिडिओची भाषा निवडा:", ["mr", "hi", "en"], format_func=lambda x: {"mr": "मराठी", "hi": "हिंदी", "en": "English"}[x])
+duration = st.slider("व्हिडिओची लांबी (सेकंद):", 15, 30, 60, value=30)
 
 def legal_safety_guard(text):
-    bad_words = ["scam", "hack", "riot", "adult", "à¤¦à¤‚à¤—à¤²", "à¤…à¤¶à¥à¤²à¥€à¤²", "à¤˜à¥‹à¤Ÿà¤¾à¤³à¤¾", "à¤¹à¥…à¤•", "à¤®à¤°à¥à¤¡à¤°", "à¤•à¥à¤°à¥…à¤¶"]
+    bad_words = ["scam", "hack", "riot", "adult", "दंगल", "अश्लील", "घोटाळा", "हॅक", "मर्डर", "क्रॅश"]
     for word in bad_words:
         if word in text.lower():
             return False
     return True
 
-# --- à¥ª. à¤†à¤µà¤¾à¤œ à¤¨à¤¿à¤°à¥à¤®à¤¿à¤¤à¥€ (Edge-TTS) ---
+# --- ४. आवाज निर्मिती (Edge-TTS) ---
 async def generate_edge_voice(text, output_path, lang_code):
     voice_map = {"mr": "mr-IN-NeerjaNeural", "hi": "hi-IN-MadhuramNeural", "en": "en-IN-NeerjaNeural"}
     chosen_voice = voice_map.get(lang_code, "hi-IN-MadhuramNeural")
     communicate = edge_tts.Communicate(text, chosen_voice)
     await communicate.save(output_path)
 
-# --- à¥«. à¤®à¥à¤–à¥à¤¯ à¤°à¥‡à¤‚à¤¡à¤°à¤¿à¤‚à¤— à¤‡à¤‚à¤œà¤¿à¤¨ ---
-if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨à¤°à¥‡à¤Ÿ à¤•à¤°à¤¾"):
+# --- ५. मुख्य रेंडरिंग इंजिन ---
+if st.button("🚀 व्हिडिओ जनरेट करा"):
     if not topic:
-        st.warning("âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤†à¤§à¥€ à¤µà¤¿à¤·à¤¯ à¤²à¤¿à¤¹à¤¾!")
+        st.warning("⚠️ कृपया आधी विषय लिहा!")
     elif not legal_safety_guard(topic):
-        st.error("ðŸš¨ à¤¸à¥à¤°à¤•à¥à¤·à¤¾ à¤¬à¥à¤²à¥‰à¤•: à¤¹à¤¾ à¤µà¤¿à¤·à¤¯ à¤†à¤®à¤šà¥à¤¯à¤¾ à¤•à¤¾à¤¯à¤¦à¥‡à¤¶à¥€à¤° à¤§à¥‹à¤°à¤£à¤¾à¤‚à¤šà¥‡ à¤‰à¤²à¥à¤²à¤‚à¤˜à¤¨ à¤•à¤°à¤¤à¥‹!")
+        st.error("🚨 सुरक्षा ब्लॉक: हा विषय आमच्या कायदेशीर धोरणांचे उल्लंघन करतो!")
     elif st.session_state["user_credits"] <= 0:
-        st.error("âŒ à¤…à¤ªà¥à¤°à¥‡ à¤•à¥à¤°à¥‡à¤¡à¤¿à¤Ÿà¥à¤¸! à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥à¤¢à¥‡ à¤œà¤¾à¤£à¥à¤¯à¤¾à¤¸à¤¾à¤ à¥€ à¤°à¤¿à¤šà¤¾à¤°à¥à¤œ à¤•à¤°à¤¾.")
+        st.error("❌ अपुरे क्रेडिट्स! कृपया पुढे जाण्यासाठी रिचार्ज करा.")
     else:
         timestamp = int(time.time())
         voice_f = f"voice_{user_id}_{timestamp}.mp3"
@@ -72,9 +72,9 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
         broll_f = f"broll_{user_id}_{timestamp}.mp4"
         final_out = f"final_{user_id}_{timestamp}.mp4"
         
-        with st.spinner("â³ à¤¸à¤¿à¤¸à¥à¤Ÿà¥€à¤® à¤¬à¥…à¤•à¤à¤‚à¤¡à¤²à¤¾ à¤•à¤¾à¤® à¤•à¤°à¤¤ à¤†à¤¹à¥‡... à¤•à¥ƒà¤ªà¤¯à¤¾ à¥§ à¤®à¤¿à¤¨à¤¿à¤Ÿ à¤¥à¤¾à¤‚à¤¬à¤¾..."):
+        with st.spinner("⏳ सिस्टीम बॅकएंडला काम करत आहे... कृपया १ मिनिट थांबा..."):
             try:
-                # --- à¤¸à¥à¤Ÿà¥‡à¤ª à¥§: OpenAI à¤•à¤¡à¥‚à¤¨ à¤¸à¥à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿ à¤®à¤¿à¤³à¤µà¤£à¥‡ ---
+                # --- स्टेप १: OpenAI कडून स्क्रिप्ट मिळवणे ---
                 headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
                 prompt = (
                     f"You are a short video script writer. Output a single strict JSON object. "
@@ -99,10 +99,10 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
                 script_text = data["script"]
                 keyword = data["keyword"]
                 
-                st.info(f"ðŸ“‹ **à¤¤à¤¯à¤¾à¤° à¤à¤¾à¤²à¥‡à¤²à¥€ à¤¸à¥à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿ:** {script_text}")
-                st.info(f"ðŸ” **à¤¶à¥‹à¤§à¤²à¥‡à¤²à¤¾ à¤•à¥€à¤µà¤°à¥à¤¡:** {keyword}")
+                st.info(f"📋 **तयार झालेली स्क्रिप्ट:** {script_text}")
+                st.info(f"🔍 **शोधलेला कीवर्ड:** {keyword}")
 
-                # --- à¤¸à¥à¤Ÿà¥‡à¤ª à¥¨: à¤‘à¤¡à¤¿à¤“ à¤¤à¤¯à¤¾à¤° à¤•à¤°à¤£à¥‡ ---
+                # --- स्टेप २: ऑडिओ तयार करणे ---
                 try:
                     asyncio.run(generate_edge_voice(script_text, voice_f, lang))
                 except RuntimeError:
@@ -110,13 +110,13 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
                     asyncio.set_event_loop(loop)
                     loop.run_until_complete(generate_edge_voice(script_text, voice_f, lang))
 
-                # --- à¤¸à¥à¤Ÿà¥‡à¤ª à¥©: à¤¸à¤¬à¤Ÿà¤¾à¤¯à¤Ÿà¤²à¥à¤¸ (SRT) à¤¤à¤¯à¤¾à¤° à¤•à¤°à¤£à¥‡ ---
+                # --- स्टेप ३: सबटायटल्स (SRT) तयार करणे ---
                 words = script_text.split()
                 with open(srt_f, "w", encoding="utf-8") as f:
                     f.write("1\n00:00:00,000 --> 00:00:05,000\n" + " ".join(words[:max(1, len(words)//2)]) + "\n\n")
                     f.write("2\n00:00:05,000 --> 00:00:30,000\n" + " ".join(words[max(1, len(words)//2):]) + "\n\n")
 
-                # --- STEP à¥ª: Pexels à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤¡à¤¾à¤Šà¤¨à¤²à¥‹à¤¡ à¤•à¤°à¤£à¥‡ ---
+                # --- STEP ४: Pexels व्हिडिओ डाऊनलोड करणे ---
                 pex_url = f"https://pexels.com{keyword}&per_page=1&orientation=portrait"
                 pex_headers = {"Authorization": PEXELS_API_KEY}
                 res_pex = requests.get(pex_url, headers=pex_headers, timeout=30).json()
@@ -129,7 +129,7 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
                     if len(files) > 0:
                         video_download_url = files[0]["link"]
                 else:
-                    st.warning("âš ï¸ à¤®à¥à¤–à¥à¤¯ à¤•à¥€à¤µà¤°à¥à¤¡à¤µà¤° à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤¸à¤¾à¤ªà¤¡à¤²à¤¾ à¤¨à¤¾à¤¹à¥€, 'nature' à¤µà¤°à¥‚à¤¨ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤˜à¥‡à¤¤à¤²à¤¾ à¤œà¤¾à¤¤ à¤†à¤¹à¥‡.")
+                    st.warning("⚠️ मुख्य कीवर्डवर व्हिडिओ सापडला नाही, 'nature' वरून व्हिडिओ घेतला जात आहे.")
                     backup_url = "https://pexels.comnature&per_page=1&orientation=portrait"
                     res_back = requests.get(backup_url, headers=pex_headers, timeout=30).json()
                     if "videos" in res_back and len(res_back["videos"]) > 0:
@@ -143,10 +143,10 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
                     with open(broll_f, "wb") as f:
                         f.write(video_data)
                 else:
-                    st.error("âŒ Pexels à¤•à¤¡à¥‚à¤¨ à¤•à¥‹à¤£à¤¤à¤¾à¤¹à¥€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤¡à¤¾à¤Šà¤¨à¤²à¥‹à¤¡ à¤•à¤°à¤¤à¤¾ à¤†à¤²à¤¾ à¤¨à¤¾à¤¹à¥€.")
+                    st.error("❌ Pexels कडून कोणताही व्हिडिओ डाऊनलोड करता आला नाही.")
                     st.stop()
 
-                # --- à¤¸à¥à¤Ÿà¥‡à¤ª à¥«: FFmpeg à¤®à¤¿à¤•à¥à¤¸à¤¿à¤‚à¤— à¤†à¤£à¤¿ à¤°à¥‡à¤‚à¤¡à¤°à¤¿à¤‚à¤— ---
+                # --- स्टेप ५: FFmpeg मिक्सिंग आणि रेंडरिंग ---
                 safe_srt_f = srt_f.replace('\\', '/')
                 sub_style = "force_style='Alignment=6,FontSize=18,PrimaryColour=&H0000FFFF,FontName=Impact'"
                 
@@ -163,17 +163,17 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
                 subprocess.run(cmd, check=True)
 
                 st.session_state["user_credits"] -= 1
-                st.success("ðŸŽ‰ à¤¤à¥à¤®à¤šà¤¾ à¤¹à¤¾à¤¯-à¤•à¥à¤µà¤¾à¤²à¤¿à¤Ÿà¥€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤¯à¤¶à¤¸à¥à¤µà¥€à¤°à¤¿à¤¤à¥à¤¯à¤¾ à¤¤à¤¯à¤¾à¤° à¤à¤¾à¤²à¤¾ à¤†à¤¹à¥‡!")
+                st.success("🎉 तुमचा हाय-क्वालिटी व्हिडिओ यशस्वीरित्या तयार झाला आहे!")
                 
                 with open(final_out, "rb") as file:
                     st.video(file)
-                    st.download_button(label="ðŸ“¥ à¤…à¤‚à¤¤à¤¿à¤® à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤¡à¤¾à¤Šà¤¨à¤²à¥‹à¤¡ à¤•à¤°à¤¾", data=file, file_name="desicut_viral_short.mp4", mime="video/mp4")
+                    st.download_button(label="📥 अंतिम व्हिडिओ डाऊनलोड करा", data=file, file_name="desicut_viral_short.mp4", mime="video/mp4")
 
             except Exception as e:
-                st.error(f"âŒ à¤¸à¤¿à¤¸à¥à¤Ÿà¥€à¤®à¤®à¤§à¥à¤¯à¥‡ à¤à¤°à¤° à¤†à¤²à¥€ à¤†à¤¹à¥‡: {str(e)}")
+                st.error(f"❌ सिस्टीममध्ये एरर आली आहे: {str(e)}")
             
             finally:
-                # --- à¥¬. à¤•à¤šà¤°à¤¾ à¤«à¤¾à¤ˆà¤²à¥à¤¸ à¤¸à¤¾à¤« à¤•à¤°à¤£à¥‡ ---
+                # --- ६. कचरा फाईल्स साफ करणे ---
                 for f in [voice_f, srt_f, broll_f, final_out]:
                     if os.path.exists(f):
                         try:
@@ -181,6 +181,6 @@ if st.button("ðŸš€ à¤µà¥à¤¹à¤¿à¤¡à¤¿à¤“ à¤œà¤¨
                         except Exception:
                             pass
 
-# --- à¥­. Footer ---
+# --- ७. Footer ---
 st.markdown("---")
 st.caption("***AI Disclaimer:** This video, voice, and script are generated using artificial intelligence automated systems via Edge-TTS and OpenAI. Users must manually review all content before uploading to social media platforms. DesiCut AI holds no liability for user-generated media.")
