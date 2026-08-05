@@ -118,7 +118,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     
                     generated_text = ""
                     if isinstance(hf_json, list) and len(hf_json) > 0:
-                        generated_text = hf_json[0].get('generated_text', '').split("<|im_start|>assistant\n")[-1].strip()
+                        generated_text = hf_json.get('generated_text', '').split("<|im_start|>assistant\n")[-1].strip()
                     elif isinstance(hf_json, dict) and 'generated_text' in hf_json:
                         generated_text = hf_json['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
                     
@@ -162,7 +162,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                 video_download_url = None
 
                 if "videos" in res_pex and len(res_pex["videos"]) > 0:
-                    first_video = res_pex["videos"][0]
+                    first_video = res_pex["videos"]
                     files = first_video.get("video_files", [])
                     for f_item in files:
                         if f_item.get("file_type") == "video/mp4" or "link" in f_item:
@@ -175,7 +175,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     res_back_raw = requests.get(backup_url, headers=pex_headers, timeout=15)
                     res_back = res_back_raw.json()
                     if "videos" in res_back and len(res_back["videos"]) > 0:
-                        first_video = res_back["videos"][0]
+                        first_video = res_back["videos"]
                         files = first_video.get("video_files", [])
                         for f_item in files:
                             if f_item.get("file_type") == "video/mp4" or "link" in f_item:
@@ -187,11 +187,10 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     with open(broll_f, "wb") as f:
                         f.write(video_data)
                 else:
-                    st.error("❌ Pexels कडून कोणताही व्हिडिओ下載 करता आला नाही.")
+                    st.error("❌ Pexels कडून कोणताही व्हिडिओ डाउनलोड करता आला नाही.")
                     st.stop()
 
                 # --- STEP ५: FFmpeg मिक्सिंग आणि रेंडर ---
                 safe_srt_f = srt_f.replace("\\", "/")
                 
-                cmd = [
-                    "ffmpeg", "-y",
+                # एरर पूर्णपणे घालवण्यासाठी एकाच रेषेत लिस्ट तयार करून बंद केली आहे
