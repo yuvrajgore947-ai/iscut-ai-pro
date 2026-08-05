@@ -1,4 +1,0 @@
-streamlit
-requests
-edge-tts
-openai
