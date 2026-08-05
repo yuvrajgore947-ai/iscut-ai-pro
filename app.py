@@ -15,7 +15,7 @@ if not PEXELS_API_KEY:
     st.error("🚨 त्रुटी: सर्व्हरवर PEXELS_API_KEY सापडली नाही! कृपया Render Environment Variables तपासा.")
     st.stop()
 
-st.title("🎬 DesiCut AI - नंबर १ हाय-प्रॉफिट टूल")
+st.title("🎬 DesiCut AI - Number 1 High-Profit Tool")
 st.write("फक्त १ क्लिकमध्ये व्हिडिओ तयार करा आणि सोशल मीडियावरून पैसे कमवा!")
 
 # --- २. युझर डॅशबोर्ड (Sidebar) ---
@@ -72,63 +72,73 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
         with st.spinner("⏳ सिस्टीम बॅकएंडला काम करत आहे... कृपया १ मिनिट थांबा..."):
             script_text = ""
             keyword = "nature"
+            ai_success = False
             
-            # --- स्टेप १: स्क्रिप्ट मिळवणे (OpenAI सह, अयशस्वी झाल्यास फ्री बॅकअप एआय) ---
-            try:
-                if not OPENAI_API_KEY:
-                    raise ValueError("OpenAI Key missing, switching to backup AI.")
-                
-                url = "https://openai.com"
-                headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
-                prompt = (
-                    f"Write a short video script about '{topic}' in language code '{lang}'. "
-                    f"Keep it under {duration} seconds. Provide a single matching search 'keyword' in strict ENGLISH for video search. "
-                    f"Output MUST be a valid JSON with exactly two keys: 'script' and 'keyword'."
-                )
-                payload = {
-                    "model": "gpt-4o-mini",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "response_format": { "type": "json_object" }
-                }
-                
-                response = requests.post(url, headers=headers, json=payload, timeout=15)
-                res_json = response.json()
-                
-                if "error" in res_json or "choices" not in res_json:
-                    raise ValueError("OpenAI Quota Exceeded or Error, switching to backup AI.")
+            # --- स्टेप १: स्क्रिप्ट मिळवणे (OpenAI सह प्रयत्न) ---
+            if OPENAI_API_KEY:
+                try:
+                    url = "https://openai.com"
+                    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+                    prompt = (
+                        f"Write a short video script about '{topic}' in language code '{lang}'. "
+                        f"Keep it under {duration} seconds. Provide a single matching search 'keyword' in strict ENGLISH for video search. "
+                        f"Output MUST be a valid JSON with exactly two keys: 'script' and 'keyword'."
+                    )
+                    payload = {
+                        "model": "gpt-4o-mini",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": { "type": "json_object" }
+                    }
                     
-                raw_content = res_json['choices']['message']['content'].strip()
-                if raw_content.startswith("```json"): raw_content = raw_content[7:-3].strip()
-                elif raw_content.startswith("```"): raw_content = raw_content[3:-3].strip()
-                
-                data = json.loads(raw_content)
-                script_text = data.get("script", "")
-                keyword = data.get("keyword", "nature")
-                
-            except Exception as openai_err:
-                # जर OpenAI चे क्रेडिट्स संपले असतील तर हा फ्री बॅकअप एआय सुरू होईल
-                st.warning("⚠️ OpenAI लायसन्स/क्रेडिट मर्यादा आली आहे. फ्री बॅकअप AI वापरून स्क्रिप्ट बनवत आहे...")
+                    response = requests.post(url, headers=headers, json=payload, timeout=15)
+                    res_json = response.json()
+                    
+                    if "error" not in res_json and "choices" in res_json:
+                        raw_content = res_json['choices']['message']['content'].strip()
+                        if raw_content.startswith("```json"): raw_content = raw_content[7:-3].strip()
+                        elif raw_content.startswith("```"): raw_content = raw_content[3:-3].strip()
+                        
+                        data = json.loads(raw_content)
+                        script_text = data.get("script", "")
+                        keyword = data.get("keyword", "nature")
+                        if script_text:
+                            ai_success = True
+                except Exception:
+                    pass
+
+            # --- स्टेप १.५: फ्री बॅकअप एआय सिस्टीम (OpenAI अपयशी ठरल्यास) ---
+            if not ai_success:
+                st.warning("⚠️ OpenAI मर्यादा आली आहे. मोफत बॅकअप AI द्वारे स्क्रिप्ट जनरेट करत आहे...")
                 try:
                     hf_url = "https://huggingface.co"
-                    hf_prompt = f"<|im_start|>user\nWrite a short video script about '{topic}' in language code '{lang}'. Keep it simple. Then provide a matching English search keyword for video. Format your answer as a JSON object with keys 'script' and 'keyword'. Do not write anything else.<|im_end|>\n<|im_start|>assistant\n"
+                    hf_prompt = f"<|im_start|>\nWrite a short video script about '{topic}' in language code '{lang}'. Keep it simple. Then provide a matching English search keyword for video. Format your answer as a JSON object with keys 'script' and 'keyword'. Do not write anything else.<|im_end|>\n<|im_start|>assistant\n"
                     
                     hf_res = requests.post(hf_url, json={"inputs": hf_prompt, "parameters": {"max_new_tokens": 300}}, timeout=20)
                     hf_json = hf_res.json()
                     
-                    generated_text = hf_json[0]['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
+                    if isinstance(hf_json, list) and len(hf_json) > 0:
+                        generated_text = hf_json[0].get('generated_text', '').split("<|im_start|>assistant\n")[-1].strip()
+                    elif isinstance(hf_json, dict) and 'generated_text' in hf_json:
+                        generated_text = hf_json['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
+                    else:
+                        generated_text = str(hf_json)
+
                     if generated_text.startswith("```json"): generated_text = generated_text[7:-3].strip()
                     elif generated_text.startswith("```"): generated_text = generated_text[3:-3].strip()
                     
                     data = json.loads(generated_text)
                     script_text = data.get("script", f"व्हिडिओ विषय: {topic}")
                     keyword = data.get("keyword", "nature")
-                except Exception as hf_err:
-                    st.error("❌ सर्व AI सर्व्हर व्यस्त आहेत. कृपया थोड्या वेळाने प्रयत्न करा.")
-                    st.stop()
+                    ai_success = True
+                except Exception:
+                    # जर दोन्ही AI बंद असतील तर सुरक्षित डिफॉल्ट मजकूर वापरणे
+                    script_text = f"नमस्कार मित्रांनो, आज आपण पाहणार आहोत {topic} या विषयाबद्दल माहिती."
+                    keyword = "nature"
 
             st.info(f"**मजकूर तयार झाला आहे:** {script_text}")
             st.info(f"**शोधलेला कीवर्ड (Pexels साठी):** {keyword}")
 
+            # --- मुख्य व्हिडिओ निर्मिती आणि रेंडर इंजिन (try-except-finally सुरक्षित रचना) ---
             try:
                 # --- STEP २: ऑडिओ तयार करणे ---
                 try:
@@ -183,17 +193,3 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     st.stop()
 
                 # --- STEP ५: FFmpeg मिक्सिंग आणि रेंडर ---
-                safe_srt_f = srt_f.replace("\\", "/")
-                
-                cmd = [
-                    "ffmpeg", "-y",
-                    "-i", broll_f,
-                    "-i", voice_f,
-                    "-vf", f"scale=1080:1920,subtitles='{safe_srt_f}':force_style='Alignment=4,FontSize=18,PrimaryColour=&HFFFFFF&'",
-                    "-map", "0:v:0", "-map", "1:a:0",
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-shortest", final_out
-                ]
-
-                subprocess.run(cmd, check=True)
-
