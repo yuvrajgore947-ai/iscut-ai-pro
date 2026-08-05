@@ -1,3 +1,54 @@
+import streamlit as st
+import os
+import time
+import requests
+import asyncio
+import edge_tts
+import json
+import subprocess
+
+# --- १. मुख्य कॉन्फिगरेशन आणि सुरक्षा ---
+# Render सर्व्हरसाठी एनव्हायर्नमेंट व्हेरियबल्समधून की मिळवणे
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
+
+if not OPENAI_API_KEY or not PEXELS_API_KEY:
+    st.error("🚨 त्रुटी: सर्व्हरवर API Keys सापडल्या नाहीत! कृपया Render Environment Variables तपासा.")
+    st.stop()
+
+st.title("🎬 DesiCut AI - नंबर १ हाय-प्रॉफिट टूल")
+st.write("फक्त १ क्लिकमध्ये व्हिडिओ तयार करा आणि सोशल मीडियावरून पैसे कमवा!")
+
+# --- २. युझर डॅशबोर्ड (Sidebar) ---
+if "user_credits" not in st.session_state:
+    st.session_state["user_credits"] = 5
+
+st.sidebar.header("👤  तुमचे खाते (मोबाईल)")
+user_id = st.sidebar.text_input("युझर आयडी:", value="pro_user_india")
+st.sidebar.write(f"🪙  शिल्लक व्हिडिओ क्रेडिट्स: **{st.session_state['user_credits']}**")
+
+if st.sidebar.button("🎁  फ्री क्रेडिट्स जोडा (+५)"):
+    st.session_state["user_credits"] += 5
+    st.sidebar.success("🎉  क्रेडिट्स यशस्वीरीत्या जोडले गेले!")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("💎  प्रीमियम प्लॅन रिचार्ज")
+st.sidebar.write("💳  UPI ID: `yourupi@okaxis`")
+st.sidebar.write("💬  [WhatsApp करा](https://wa.me) आणि अमर्याद क्रेडिट्स मिळवा.")
+
+# --- ३. इनपुट फॉर्म आणि लांबी गार्ड ---
+topic = st.text_input("तुमच्या व्हिडिओचा विषय लिहा (उदा. भारतातील ३ रहस्यमयी किल्ले):")
+lang = st.selectbox("व्हिडिओची भाषा निवडा:", ["mr", "hi", "en"], format_func=lambda x: "मराठी" if x=="mr" else "हिंदी" if x=="hi" else "English")
+duration = st.slider("व्हिडिओची लांबी (सेकंद):", min_value=15, max_value=60, value=30)
+
+def legal_safety_guard(text):
+    bad_words = ["scam", "hack", "riot", "adult", "दंगा", "अश्लील", "घोटाळा"]
+    for word in bad_words:
+        if word in text.lower():
+            return False
+    return True
+
+# --- ४. आवाज निर्मिती (Edge-TTS) ---
 async def generate_edge_voice(text, output_path, lang_code):
     voice_map = {"mr": "mr-IN-NeerjaNeural", "hi": "hi-IN-MadhuramNeural", "en": "en-US-GuyNeural"}
     chosen_voice = voice_map.get(lang_code, "hi-IN-MadhuramNeural")
@@ -91,7 +142,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                             break
 
                 if not video_download_url:
-                    st.warning("⚠️ मुख्य कीवर्डवर व्हिडिओ सापडला नाही, बॅकअप व्हिडिओ वापरत आहे...")
+                    st.warning("⚠️  मुख्य कीवर्डवर व्हिडिओ सापडला नाही, बॅकअप व्हिडिओ वापरत आहे...")
                     backup_url = "https://pexels.comnature&per_page=1&orientation=portrait"
                     res_back_raw = requests.get(backup_url, headers=pex_headers, timeout=15)
                     res_back = res_back_raw.json()
@@ -127,11 +178,11 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                 subprocess.run(cmd, check=True)
 
                 st.session_state["user_credits"] -= 1
-                st.success("🎉 तुमचा हाय-प्रॉफिट व्हिडिओ यशस्वीरीत्या तयार झाला आहे!")
+                st.success("🎉  तुमचा हाय-प्रॉफिट व्हिडिओ यशस्वीरीत्या तयार झाला आहे!")
 
                 with open(final_out, "rb") as file:
                     st.video(file)
-                    st.download_button(label="📥 व्हिडिओ डाउनलोड करा", data=file.read(), file_name="desicut_video.mp4", mime="video/mp4")
+                    st.download_button(label="📥  व्हिडिओ डाउनलोड करा", data=file.read(), file_name="desicut_video.mp4", mime="video/mp4")
 
             except Exception as e:
                 st.error(f"❌ व्हिडिओ मिक्सिंगमध्ये एरर आला: {str(e)}")
@@ -143,3 +194,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                             os.remove(f)
                         except Exception:
                             pass
+
+# --- ६. फुटर ---
+st.markdown("---")
+st.caption("**AI Disclaimer:** This video, voice, and script are generated using artificial intelligence automated systems via Edge-TTS and OpenAI. DesiCut AI holds no liability for user-generated media.")
