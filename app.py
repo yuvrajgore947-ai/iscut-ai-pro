@@ -47,7 +47,7 @@ def legal_safety_guard(text):
             return False
     return True
 
-# --- ४. आवाज निर्मिती (Edge-TTS) ---
+# --- ४. आवाज निर्मितี (Edge-TTS) ---
 async def generate_edge_voice(text, output_path, lang_code):
     voice_map = {"mr": "mr-IN-NeerjaNeural", "hi": "hi-IN-MadhuramNeural", "en": "en-US-GuyNeural"}
     chosen_voice = voice_map.get(lang_code, "hi-IN-MadhuramNeural")
@@ -106,7 +106,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                 except Exception:
                     ai_success = False
 
-            # --- स्टेप १.५: फ्री बॅकअप एआय सिस्टीम (HuggingFace) ---
+            # --- STEP १.५: फ्री बॅकअप एआय सिस्टीम (HuggingFace) ---
             if not ai_success:
                 st.warning("⚠️ OpenAI मर्यादा आली आहे. मोफत बॅकअप AI द्वारे स्क्रिप्ट जनरेट करत आहे...")
                 try:
@@ -118,20 +118,27 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     
                     generated_text = ""
                     if isinstance(hf_json, list) and len(hf_json) > 0:
-                        generated_text = hf_json.get('generated_text', '').split("<|im_start|>assistant\n")[-1].strip()
+                        first_item = hf_json[0]
+                        if isinstance(first_item, dict):
+                            generated_text = first_item.get('generated_text', '')
                     elif isinstance(hf_json, dict) and 'generated_text' in hf_json:
-                        generated_text = hf_json['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
+                        generated_text = hf_json['generated_text']
                     
-                    if generated_text.startswith("```json"): generated_text = generated_text[7:-3].strip()
-                    elif generated_text.startswith("```"): generated_text = generated_text[3:-3].strip()
-                    
-                    data = json.loads(generated_text)
-                    script_text = data.get("script", f"व्हिडिओ विषय: {topic}")
-                    keyword = data.get("keyword", "nature")
-                    ai_success = True
+                    if generated_text:
+                        generated_text = generated_text.split("<|im_start|>assistant\n")[-1].strip()
+                        if generated_text.startswith("```json"): generated_text = generated_text[7:-3].strip()
+                        elif generated_text.startswith("```"): generated_text = generated_text[3:-3].strip()
+                        
+                        data = json.loads(generated_text)
+                        script_text = data.get("script", f"व्हिडिओ विषय: {topic}")
+                        keyword = data.get("keyword", "nature")
+                        ai_success = True
                 except Exception:
-                    script_text = f"नमस्कार मित्रांनो, आज आपण पाहणार आहोत {topic} या विषयाबद्दल माहिती."
-                    keyword = "nature"
+                    pass
+
+            if not script_text:
+                script_text = f"नमस्कार मित्रांनो, आज आपण पाहणार आहोत {topic} या विषयाबद्दल माहिती."
+                keyword = "nature"
 
             st.info(f"**मजकूर तयार झाला आहे:** {script_text}")
             st.info(f"**शोधलेला कीवर्ड (Pexels साठी):** {keyword}")
@@ -162,7 +169,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                 video_download_url = None
 
                 if "videos" in res_pex and len(res_pex["videos"]) > 0:
-                    first_video = res_pex["videos"]
+                    first_video = res_pex["videos"][0]
                     files = first_video.get("video_files", [])
                     for f_item in files:
                         if f_item.get("file_type") == "video/mp4" or "link" in f_item:
@@ -175,7 +182,7 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                     res_back_raw = requests.get(backup_url, headers=pex_headers, timeout=15)
                     res_back = res_back_raw.json()
                     if "videos" in res_back and len(res_back["videos"]) > 0:
-                        first_video = res_back["videos"]
+                        first_video = res_back["videos"][0]
                         files = first_video.get("video_files", [])
                         for f_item in files:
                             if f_item.get("file_type") == "video/mp4" or "link" in f_item:
@@ -188,9 +195,3 @@ if st.button("🎬 व्हिडिओ जनरेट करा"):
                         f.write(video_data)
                 else:
                     st.error("❌ Pexels कडून कोणताही व्हिडिओ डाउनलोड करता आला नाही.")
-                    st.stop()
-
-                # --- STEP ५: FFmpeg मिक्सिंग आणि रेंडर ---
-                safe_srt_f = srt_f.replace("\\", "/")
-                
-                # एरर पूर्णपणे घालवण्यासाठी एकाच रेषेत लिस्ट तयार करून बंद केली आहे
